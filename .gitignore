@@ -90,5 +90,5 @@ ENV/
 .ropeproject
 
 # logs and databases
-logs/
-dbs/
+logs/*
+dbs/*
