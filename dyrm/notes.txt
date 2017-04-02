@@ -1,0 +1,11 @@
+Things to think about as I move from partial db to full db.
+
+1) Modularity and command-line control. I need some options here.
+   a) Choice about legacy, monthly, or both in the main part.
+   b) Choice about user name for aoi, possibly set in the db as a default.
+      Assume for now we only need one, captured the first time.
+      This is a big one. Cannot deliver without this option.
+   c) More unit-test driven
+   d) More modular
+   e) Use of logging facility, maybe.
+   f) Specify db name on the command line, also.
