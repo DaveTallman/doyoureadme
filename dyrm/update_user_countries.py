@@ -68,8 +68,8 @@ def main(userid=None):
                 if user.aliases:
                     alias = user.aliases[0].name
                 print(
-                    "Updating user '{0}' with country '{1}'".format(
-                        alias, country))
+                    "Updating user '{0}' ({1}) with country '{2}'".format(
+                        alias, str(user.code), country))
                 user.country = country
 
         except ConnectionRefusedError:

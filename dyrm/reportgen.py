@@ -138,7 +138,7 @@ class ReportGen:
                 "chapter %d: '%s' %s %d to %d (delta %d)" %
                 (ch_num, ch_title, val_key, old_val, val, val_delta))
             return 1
-        return self.false_return
+        return 0
 
     def compare_and_print(
             self, title, val_key, grp, old_grp, prefix="", extra=""):
@@ -157,8 +157,9 @@ class ReportGen:
                 title,
                 "'%s' %s%s %d to %d (delta %d)" %
                 (title, extra, val_key, old_val, val, val_delta))
+        if val != old_val:
             return 1
-        return self.false_return
+        return 0
 
     def set_catchup(self, catchup):
         self.false_return = 0

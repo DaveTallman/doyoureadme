@@ -351,17 +351,13 @@ class FanfictionGetterTestCase(unittest.TestCase):
         scraper = FanfictionScraper()
         content = self.single_text.encode("utf-8")
         single_tree = html.fromstring(content)
-        by_date, by_country = scraper.get_chapter_single(single_tree)
-        self.assertEqual(len(by_date), len(self.ch1_by_date))
+        by_country = scraper.get_chapter_single(single_tree)
         self.assertEqual(len(by_country), len(self.ch1_by_country))
         for i, item in enumerate(self.ch1_by_country):
             self.assertEqual(by_country[i].cat, item.cat)
             self.assertEqual(by_country[i].views, item.views)
             self.assertEqual(by_country[i].visitors, item.visitors)
-        for i, item in enumerate(self.ch1_by_date):
-            self.assertEqual(by_date[i].cat, item.cat)
-            self.assertEqual(by_date[i].views, item.views)
-            self.assertEqual(by_date[i].visitors, item.visitors)
+
 
 if __name__ == '__main__':
     unittest.main()

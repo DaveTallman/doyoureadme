@@ -154,6 +154,7 @@ class Ao3Stories(Base):
     kudos = Column(Integer, default=0)
     comments = Column(Integer, default=0)
     bookmarks = Column(Integer, default=0)
+    ref = Column(Integer, default=0)
 
     def __repr__(self):
         return "<A03Stories(title='%s')>" % (

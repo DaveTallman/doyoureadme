@@ -12,6 +12,7 @@ from dyrm.ffgetter import MonthCaption, TitleRec
 # import dyrm.ffmonthly
 from dyrm.ffmonthly import MonthlyDataTree, MonthlySetup
 import requests
+import types
 from requests import Session, Response
 from lxml import html
 
@@ -310,11 +311,15 @@ class FFMonthlyTestCase(unittest.TestCase):
         tree = html.fromstring(content)
         mcap = scraper.get_month_caption(tree)
         getter = MagicMock(autospec=FanfictionGetter)
-        mtree = MonthlyDataTree(getter, "08", "2016", self.chapter_dict)
-        mtree.check_caption_updates(mcap)
-        new_tree = mtree.get_new_tree()
-        self.assertEqual(new_tree["m_visitors"], mcap.visitors)
-        self.assertEqual(new_tree["m_views"], mcap.views)
+        read_db = MagicMock(autospec=ReadMeDb)
+        mock_mtop = types.SimpleNamespace(
+            mid=1, day=10, views=101, visitors=101)
+        read_db.get_or_create_mtop.return_value = mock_mtop
+        my_date = types.SimpleNamespace(mid=1, month=8, year=2016)
+        mtree = MonthlyDataTree(getter, my_date, eyes_tree=tree)
+        new_tree = mtree.check_caption_updates(mcap, read_db)
+        self.assertEqual(new_tree.visitors, mcap.visitors)
+        self.assertEqual(new_tree.views, mcap.views)
         mcap_report = mtree.get_monthly_report()
         self.assertEqual(1, mcap_report.get_report_len())
 

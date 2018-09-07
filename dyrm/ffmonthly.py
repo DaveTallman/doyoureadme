@@ -172,6 +172,8 @@ class MonthlyDataTree:
         if changed > 0:
             top_rec.views = mcap.views
             top_rec.visitors = mcap.visitors
+        # For testing
+        return top_rec
 
     def check_story_updates(self, story_rows, read_db):
         """ Find out what stories need their chapters checked """

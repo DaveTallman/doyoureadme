@@ -61,7 +61,7 @@ class PageGetter:
         except AttributeError:
             logging.debug("sleeper was null")
 
-    def get_page(self, page, payload=None, timeout=10.0):
+    def get_page(self, page, payload=None, timeout=15.0):
         """ Get a page from the fanfiction site """
         if payload is None:
             payload = {}
@@ -264,7 +264,7 @@ class FanfictionScraper:
     def get_month_year(self, eyes_tree):
         """ Get month and year of monthly page """
         month_caption = self.get_month_caption(eyes_tree)
-        return month_caption.month, self.month_caption.year
+        return month_caption.month, month_caption.year
 
     def get_comments(self, comment_tree):
         """ Get comment rows from page """
@@ -320,7 +320,7 @@ class FanfictionScraper:
     def get_chapter_single(self, single_tree):
         """ Get visitor tables for a single chapter """
 
-        # This will give us two charts, one by date and one by country
+        # This will give us one chart by country. By date isn't interesting.
         self.visitor_parser.set_tree(single_tree)
         by_country = self.visitor_parser.get_visits(1)
         return by_country

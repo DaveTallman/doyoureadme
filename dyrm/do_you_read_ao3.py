@@ -42,6 +42,7 @@ class Ao3Scraper:
 
         for header, stat_block in zip(headers, stats):
             title = header.text_content()
+            ref = int(header.get("href")[7:])
             hit_list = self.find_hits(stat_block)
             if hit_list:
                 hits = int(hit_list[0].text_content())
@@ -64,6 +65,7 @@ class Ao3Scraper:
                 bookmarks = 0
             recs.append({
                 "title": title,
+                "ref": ref,
                 "hits": hits, "kudos": kudos,
                 "comments": comments, "bookmarks": bookmarks})
         return recs
@@ -76,16 +78,19 @@ def compare_ao3_rec(db_rec, current_rec, report_gen):
     """
     tests = [
         'hits', 'kudos',
-        'comments', 'bookmarks']
+        'comments', 'bookmarks', 'ref']
     current_dict = current_rec
     db_dict = db_rec.__dict__
+    changed = []
     for value_key in tests:
         if report_gen.compare_and_print(
                 current_rec["title"],
                 value_key,
                 current_dict,
-                db_dict):
+                db_dict) > 0:
             setattr(db_rec, value_key, current_dict[value_key])
+            changed.append(value_key)
+    return changed
 
 
 def main(db="dbs/readme.db"):
@@ -109,7 +114,7 @@ def main(db="dbs/readme.db"):
         works_page = "https://archiveofourown.org/users/RockSunner/works"
         with PageGetter(cookie_jar=cjar) as pgetter:
             # Note: will need to be able to plug in a name.
-            tree = pgetter.get_page(works_page, timeout=10.0)
+            tree = pgetter.get_page(works_page, timeout=15.0)
             find_navigation = \
                 etree.XPath('//ol[@class = "pagination actions"]/li/a')
             page_nums = find_navigation(tree)
@@ -135,7 +140,9 @@ def main(db="dbs/readme.db"):
             with ReadMeDb(db, echo=False) as read_db:
                 for rec in recs:
                     story = read_db.get_or_create_ao3_story(rec["title"])
-                    compare_ao3_rec(story, rec, report_gen)
+                    changed = compare_ao3_rec(story, rec, report_gen)
+                    if "kudos" in changed:
+                        eprint("Could look up kudos here")
                 report_gen.print_report()
                 read_db.set_commit_flag()
 

@@ -41,7 +41,7 @@ def get_cookie_jar(profile_folder):
     if read_cookies_db(profile_folder, strio) is False:
         return False
 
-    read_sessions_file(profile_folder, strio)
+    # read_sessions_file(profile_folder, strio)
 
     strio.seek(0)
     cookie_jar = MozillaCookieJar()
