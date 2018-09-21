@@ -22,7 +22,8 @@ def uncomma(num_str):
 
 def print_divider():
     """ Dividing line between sections of output """
-    logging.info("-" * 10)
+    logger = logging.getLogger(__name__)
+    logger.info("-" * 10)
 
 
 class ReportGen:
@@ -176,11 +177,12 @@ class ReportGen:
             return
         self.used_keys.add(key)
         if self.report[key]:
+            logger = logging.getLogger(__name__)
             if key not in self.report[key][0]:
                 # Title if not there
-                logging.info(key)
+                logger.info(key)
             for line in self.report[key]:
-                logging.info(line)
+                logger.info(line)
 
     def print_report(self):
         """ Print out a sorted report of the changes collected """

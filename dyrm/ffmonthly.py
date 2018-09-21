@@ -74,16 +74,16 @@ class MonthlySetup:
         year = int(mcap.year)
 
         if old_month != month or old_year != year:
-            logging.debug(
+            logger = logging.getLogger(__name__)
+            logger.debug(
                 "Need to catch up for {}/{}".format(
                     old_month, old_year))
             # Build a return case with TWO MonthlyDataTrees!!!!
             new_month = read_db.get_or_create_month(
-                month=month, year=year, mid=old_mid+1)
+                month=month, year=year, mid=old_mid + 1)
             report_gen.set_catchup(self.catchup)
             mtree = MonthlyDataTree(
-                getter, new_month, eyes_tree, report_gen, catchup=self.catchup)
-            report_gen0 = ReportGen('Last Month')
+                getter, new_month, eyes_tree, report_gen)
             mtree0 = MonthlyDataTree(
                 getter, self.last_month, eyes_tree=None, report_gen=None)
             return [mtree0, mtree]
@@ -92,7 +92,7 @@ class MonthlySetup:
             report_gen.set_catchup(self.catchup)
             mtree = MonthlyDataTree(
                 getter, self.last_month,
-                eyes_tree, report_gen, catchup=self.catchup)
+                eyes_tree, report_gen)
             return [mtree]
 
 
@@ -108,14 +108,15 @@ class MonthlyDataTree:
     def __init__(
             self, getter, month_rec,
             eyes_tree=None, report_gen=None,
-            monthly_gen=None, catchup=False):
+            monthly_gen=None, delay=8):
 
         # pylint: disable=too-many-arguments
 
         self.month = str(month_rec.month).zfill(2)
         self.year = str(month_rec.year)
         self.mid = month_rec.mid
-        self.catchup = catchup
+        self.delay = delay
+        self.catchup = False
 
         if eyes_tree is None:
             eyes_tree = getter.get_old_story_eyes_tree(self.month, self.year)
@@ -259,7 +260,8 @@ class MonthlyDataTree:
         for chapter in chapter_rows:
             chapter_rec = read_db.get_or_create_chapter(sref, chapter)
             if chapter_rec.title != chapter.title:
-                logging.info(
+                logger = logging.getLogger(__name__)
+                logger.info(
                     "chapter title changed to {}".format(chapter.title))
                 chapter_rec.title = chapter.title
             db_rec = read_db.get_or_create_mchap(self.mid, sref, chapter.num)
@@ -304,8 +306,9 @@ def print_story_rows(story_rows):
     Print the records in the story table.
     They give hit counts for a month.
     """
+    logger = logging.getLogger(__name__)
     for row in story_rows:
-        logging.info(
+        logger.info(
             "%s / %s / %s / %s / %s"
             % (row.title,
                row.words,
@@ -375,8 +378,9 @@ def do_story_eyes(scraper, eyes_tree, mtop=None):
     month transition.
     """
     mcap = scraper.get_month_caption(eyes_tree)
+    logger = logging.getLogger(__name__)
     if mcap:
-        logging.info(
+        logger.info(
             "%s/%s views: %s visitors %s" %
             (mcap.month, mcap.year, mcap.views,
              mcap.visitors))
@@ -384,7 +388,7 @@ def do_story_eyes(scraper, eyes_tree, mtop=None):
             mtop.views = int(mcap.views)
             mtop.visitors = int(mcap.visitors)
     else:
-        logging.debug("Did not find month string")
+        logger.debug("Did not find month string")
         sys.exit()
 
     print_divider()
@@ -400,21 +404,23 @@ def do_story_eyes(scraper, eyes_tree, mtop=None):
 
 def print_date_info(by_date):
     """ print results from date and country visitor tables """
-    logging.info("Date\tViews\tVisitors")
+    logger = logging.getLogger(__name__)
+    logger.info("Date\tViews\tVisitors")
     for vcount in by_date[0:1]:
-        logging.info(
+        logger.info(
             "%s\t%s\t%s" % (vcount.cat, vcount.views, vcount.visitors))
     print_divider()
 
 
-def main(db, catchup=False, nomonth=False):
+def main(db, nomonth=False, delay=8.0, timeout=18.0):
     """ Main driver """
 
     # pylint: disable=too-many-locals, too-many-statements
 
     import datetime
     now = datetime.datetime.now()
-    logging.info('{0:%Y-%m-%d %H:%M:%S}'.format(now))
+    logger = logging.getLogger(__name__)
+    logger.info('{0:%Y-%m-%d %H:%M:%S}'.format(now))
 
     firefox_profile_folder = read_firefox_cookies.get_profile_folder()
     cjar = read_firefox_cookies.get_cookie_jar(firefox_profile_folder)
@@ -428,7 +434,8 @@ def main(db, catchup=False, nomonth=False):
     # Legacy part first, hoping to deal with slow timeouts, etc.
     legacy_error = False
     try:
-        with PageGetter(cookie_jar=cjar) as pgetter:
+        with PageGetter(
+                cookie_jar=cjar, delay=delay, timeout=timeout) as pgetter:
             getter = FanfictionGetter(pgetter)
 
             with ReadMeDb(db, echo=False) as read_db:
@@ -456,9 +463,10 @@ def main(db, catchup=False, nomonth=False):
     # Now for the monthly records
     with ReadMeDb(db, echo=False) as read_db:
         try:
-            with PageGetter(cookie_jar=cjar) as pgetter:
+            with PageGetter(
+                    cookie_jar=cjar, delay=delay, timeout=timeout) as pgetter:
                 getter = FanfictionGetter(pgetter)
-                msetup = MonthlySetup(read_db, catchup=catchup)
+                msetup = MonthlySetup(read_db)
                 data_trees = msetup.get_data_trees(
                     read_db, getter, scraper, report_gen)
 

@@ -6,8 +6,6 @@ Get cookies from Firefox.
 
 import sys
 import os
-import logging
-from dyrm.eprint import eprint
 
 
 FTSTR = ["FALSE", "TRUE"]
@@ -25,14 +23,12 @@ def get_cookie_jar(profile_folder):
     * Support cookies from recovery.js
     * Accept profile folder as input parameter instead of sqlite filename
     """
+
+    import http.cookiejar
     from io import StringIO
-    try:
-        from http.cookiejar import MozillaCookieJar
-    except ImportError:
-        from cookielib import MozillaCookieJar
 
     strio = StringIO()
-    strio.write(u"""\
+    strio.write("""\
 # Netscape HTTP Cookie File
 # http://www.netscape.com/newsref/std/cookie_spec.html
 # This is a generated file!  Do not edit.
@@ -44,7 +40,7 @@ def get_cookie_jar(profile_folder):
     # read_sessions_file(profile_folder, strio)
 
     strio.seek(0)
-    cookie_jar = MozillaCookieJar()
+    cookie_jar = http.cookiejar.MozillaCookieJar()
     cookie_jar._really_load(strio, '', True, True)
 
     return cookie_jar
@@ -55,6 +51,7 @@ def read_cookies_db(profile_folder, strio):
     Read the Firefox cookies database.
     """
 
+    import os
     import sqlite3
 
     sql_file = os.path.join(profile_folder, 'cookies.sqlite')
@@ -82,6 +79,7 @@ def read_sessions_file(profile_folder, strio):
     """
 
     import json
+    import os
     import time
 
     sessions_file = os.path.join(
@@ -89,18 +87,13 @@ def read_sessions_file(profile_folder, strio):
         'sessionstore-backups/recovery.js')
 
     try:
-        with open(sessions_file, 'r') as sessions_input:
-            sessions_data = json.loads(sessions_input.read())
-    except IOError:
+        sessions_input = open(sessions_file, 'r')
+    except FileNotFoundError:
         return
 
-    for win in sessions_data['windows']:
-        try:
-            _ = win['cookies']
-        except KeyError:
-            eprint("Cookies not found in sessions data. Try closing Firefox.")
-            return
+    sessions_data = json.loads(sessions_input.read())
 
+    for win in sessions_data['windows']:
         for c_item in win['cookies']:
 
             # Required Keys: host, path, value, name
@@ -120,7 +113,7 @@ def read_sessions_file(profile_folder, strio):
 
             # This field is needed, even though it doesn't seem to be
             # available in the JSON
-            c_item['expiry'] = int(time.time()+84600)
+            c_item['expiry'] = int(time.time() + 84600)
 
             strio.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (
                 c_item['host'],
@@ -133,8 +126,10 @@ def read_sessions_file(profile_folder, strio):
 
 
 def get_profile_folder():
+    """
+    Return the Firefox profile folder
 
-    """ Return the Firefox profile folder """
+    """
 
     import configparser
 
@@ -168,8 +163,40 @@ def main():
     if cjar is False:
         eprint("Failed to get a cookie jar.")
         sys.exit()
-    logging.info("Got the cookie jar")
+    print("Got the cookie jar")
+
 
 # Test the script, see if we are logged into fanfiction.net
 if __name__ == "__main__":
     main()
+
+# Old code for reference:
+
+# def sqlite2cookie(filename):
+#     from cStringIO import StringIO
+#     from pysqlite2 import dbapi2 as sqlite
+
+#     con = sqlite.connect(filename)
+
+#     cur = con.cursor()
+#     cur.execute(
+#         "select host, path, isSecure, expiry, name, value from moz_cookies")
+
+#     ftstr = ["FALSE", "TRUE"]
+
+#     s = StringIO()
+#     s.write("""\
+# # Netscape HTTP Cookie File
+# # http://www.netscape.com/newsref/std/cookie_spec.html
+# # This is a generated file!  Do not edit.
+# """)
+#     for item in cur.fetchall():
+#         s.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (
+#             item[0], ftstr[item[0].startswith('.')], item[1],
+#             ftstr[item[2]], item[3], item[4], item[5]))
+
+#     s.seek(0)
+
+#     cookie_jar = cookielib.MozillaCookieJar()
+#     cookie_jar._really_load(s, '', True, True)
+#     return cookie_jar

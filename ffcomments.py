@@ -70,11 +70,14 @@ def main():
         format='%(message)s',
         level=logging.INFO)
     if args.out:
-        root = logging.getLogger()
         hand = logging.StreamHandler(sys.stdout)
-        root.addHandler(hand)
+        hand.setLevel(logging.INFO)
+        form = logging.Formatter('%(message)s')
+        hand.setFormatter(form)
+        logging.getLogger('').addHandler(hand)
 
-    logging.info("fanfiction.net comments for " + args.story)
+    logger = logging.getLogger(__name__)
+    logger.info("fanfiction.net comments for " + args.story)
 
     scraper = FanfictionScraper()
 

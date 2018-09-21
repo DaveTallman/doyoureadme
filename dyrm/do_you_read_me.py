@@ -93,12 +93,13 @@ def compare_legacy_recs_to_db(legacy_recs, read_db, report_gen):
 
 def compare_story_recs(db_rec, current_rec, read_db):
     """ Compare a single story record and get it up to date in the db """
+    logger = logging.getLogger(__name__)
     if not db_rec:
-        logging.info("New story '{}'".format(current_rec.title))
+        logger.info("New story '{}'".format(current_rec.title))
         db_rec = read_db.get_or_create_story(
             current_rec.ref, current_rec.title)
     if db_rec.title != current_rec.title:
-        logging.info(
+        logger.info(
             "Changed title '{}' to '{}'".format(
                 db_rec.title, current_rec.title))
         db_rec.title = current_rec.title
@@ -108,7 +109,8 @@ def compare_titles_to_db(ff_titles, read_db):
     """ Query the database for old story title info, compare to the latest """
     db_stories = read_db.get_stories()
     if not db_stories:
-        logging.debug("Doing a mass story insert")
+        logger = logging.getLogger(__name__)
+        logger.debug("Doing a mass story insert")
         read_db.batch_insert_stories(ff_titles)
         db_stories = read_db.get_stories()
         return

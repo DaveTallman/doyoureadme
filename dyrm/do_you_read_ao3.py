@@ -34,7 +34,7 @@ class Ao3Scraper:
         self.find_comments = etree.XPath('dd[@class = "comments"]')
         self.find_bookmarks = etree.XPath('dd[@class = "bookmarks"]')
         self.find_headers = etree.XPath(
-            '//div[@class = "header module"]/h4[@class = "heading"]/a[contains(@href,"works")]')
+            '//div[@class ="header module"]/h4[@class = "heading"]/a[contains(@href,"works")]')
 
     def parse_tree(self, tree, recs):
         stats = self.find_stats(tree)
@@ -114,7 +114,7 @@ def main(db="dbs/readme.db"):
         works_page = "https://archiveofourown.org/users/RockSunner/works"
         with PageGetter(cookie_jar=cjar) as pgetter:
             # Note: will need to be able to plug in a name.
-            tree = pgetter.get_page(works_page, timeout=15.0)
+            tree = pgetter.get_page(works_page)
             find_navigation = \
                 etree.XPath('//ol[@class = "pagination actions"]/li/a')
             page_nums = find_navigation(tree)
@@ -148,8 +148,12 @@ def main(db="dbs/readme.db"):
 
             pgetter.stop_sleep()
 
-    except ConnectionRefusedError:
-        eprint("Need to be logged in to archiveofourown.org")
+    except ConnectionRefusedError as exc:
+            eprint("ConnectionRefused to archiveofourown.org", exc)
+    except ConnectionAbortedError as exc:
+            eprint("Connection problem", exc)
+    except Exception as exc:
+        eprint("Cannot connect to archiveofourown.org", exc)
 
 
 # Do an update from the current fanfiction.net to our db.

@@ -32,7 +32,7 @@ class PageGetter:
     # Sleeping thread
     old_sleeper = None
 
-    def __init__(self, session=None, cookie_jar=None, delay=8.0):
+    def __init__(self, session=None, cookie_jar=None, delay=8.0, timeout=18.0):
         if session is None:
             self.session = requests.Session()
             self.is_own_session = True
@@ -43,6 +43,7 @@ class PageGetter:
             cookie_jar = {}
         self.cjar = cookie_jar
         self.delay = delay
+        self.timeout = timeout
         self.response = None
 
     def __enter__(self):
@@ -59,15 +60,17 @@ class PageGetter:
         try:
             self.old_sleeper.cancel()
         except AttributeError:
-            logging.debug("sleeper was null")
+            logger = logging.getLogger(__name__)
+            logger.debug("sleeper was null")
 
-    def get_page(self, page, payload=None, timeout=15.0):
+    def get_page(self, page, payload=None):
         """ Get a page from the fanfiction site """
         if payload is None:
             payload = {}
 
         # Make sure we have waited long enough before going for a new page.
-        if self.old_sleeper:
+        active_count = threading.active_count();
+        if active_count > 1 and self.old_sleeper is not None:
             self.old_sleeper.join()
             self.old_sleeper = None
 
@@ -83,7 +86,7 @@ class PageGetter:
         try:
             self.response = self.session.get(
                 page,
-                timeout=timeout,
+                timeout=self.timeout,
                 cookies=self.cjar,
                 params=payload)
         except requests.exceptions.Timeout as exc:
@@ -91,7 +94,8 @@ class PageGetter:
             eprint("Timeout problem", exc)
             raise ConnectionAbortedError('Timeout')
         except Exception:
-            logging.error(traceback.format_exc())
+            logger = logging.getLogger(__name__)
+            logger.error(traceback.format_exc())
             raise ConnectionAbortedError('Catch-all')
 
         if self.response.status_code != requests.codes.ok:
@@ -191,7 +195,7 @@ class FanfictionGetter:
     def get_user_profile_tree(self, code):
         """ Get the user profile page """
         page = "https://www.fanfiction.net/u/" + str(code)
-        tree = self.pgetter.get_page(page, timeout=5.0)
+        tree = self.pgetter.get_page(page)
         return tree
 
     def get_user_country(self, code):
@@ -815,10 +819,11 @@ class MonthChapterRowsParser:
 def main():
     """ Main test driver. Expect to fetch the page without cookies. """
     try:
+        logger = logging.getLogger(__name__)
         with requests.Session() as session:
             getter = PageGetter(session)
             getter.get_page('https://www.fanfiction.net')
-            logging.info("Got the page")
+            logger.info("Got the page")
             getter.stop_sleep()
     except ConnectionRefusedError:
         eprint("Page needs cookies for access")

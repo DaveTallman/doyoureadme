@@ -24,10 +24,6 @@ def main():
         help="echo to stdout",
         action="store_true")
     parser.add_argument(
-        "-c", "--catchup",
-        help="catch up totals",
-        action="store_true")
-    parser.add_argument(
         "-d", "--database",
         type=str,
         default="dbs/readme.db",
@@ -37,6 +33,16 @@ def main():
         type=str,
         default="logs/ooo.txt",
         help="path to log file")
+    parser.add_argument(
+        "-t", "--timedelay",
+        type=float,
+        default=8.0,
+        help="time delay between page gets in seconds")
+    parser.add_argument(
+        "-m", "--maxtime",
+        type=float,
+        default=18.0,
+        help="max time to wait for page")
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -44,15 +50,20 @@ def main():
         format='%(message)s',
         level=logging.INFO)
     if args.out:
-        root = logging.getLogger()
         hand = logging.StreamHandler(sys.stdout)
-        root.addHandler(hand)
+        hand.setLevel(logging.INFO)
+        form = logging.Formatter('%(message)s')
+        hand.setFormatter(form)
+        logging.getLogger('').addHandler(hand)
 
-    logging.info("fanfiction.net")
+    logger = logging.getLogger(__name__)
+    logger.info("fanfiction.net")
 
-    ffmonthly.main(args.database, catchup=args.catchup, nomonth=args.nomonth)
+    ffmonthly.main(
+        args.database, nomonth=args.nomonth,
+        delay=args.timedelay, timeout=args.maxtime)
     if args.ao3:
-        logging.info("ao3")
+        logger.info("ao3")
         do_you_read_ao3.main(args.database)
 
 
